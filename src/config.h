@@ -3,6 +3,7 @@ typedef struct anydisk_config_t
     /* data */
     int disk_size;
     const char* disk_type;
+    const char* nbd_device;
     const char* param_file;
     const char* output_file;
 

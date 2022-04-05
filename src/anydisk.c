@@ -27,9 +27,12 @@
 #include "config.h"
 #include "buse.h"
 
-static anydisk_config configuration;
+static anydisk_config disk_config;
 /* BUSE callbacks */
 static void *data;
+static SysTime now = 0;		/* current time */
+static SysTime next_event = -1;	/* next event */
+static int completed = 0;	/* last request was completed */
 
 static int anydisk_read(void *buf, u_int32_t len, u_int64_t offset, void *userdata)
 {
@@ -67,34 +70,37 @@ static int anydisk_trim(u_int64_t from, u_int32_t len, void *userdata)
   return 0;
 }
 
-/* argument parsing using argp */
+/*
+ * Schedule next callback at time t.
+ * Note that there is only *one* outstanding callback at any given time.
+ * The callback is for the earliest event.
+ */
+void syssim_schedule_callback(disksim_interface_callback_t fn, SysTime t, void *ctx)
+{
+  next_event = t;
+}
 
-static struct argp_option options[] = {
-  {"verbose", 'v', 0, 0, "Produce verbose output", 0},
-  {0},
-};
+/*
+ * de-scehdule a callback.
+ */
+void syssim_deschedule_callback(double t, void *ctx)
+{
+  next_event = -1;
+}
 
-struct arguments {
-  unsigned long long size;
-  char * device;
-  int verbose;
-};
 
-static struct argp argp = {
-  .options = options,
-  // .parser = parse_opt,
-  .args_doc = "SIZE DEVICE",
-  .doc = "BUSE virtual block device that stores its content in memory.\n"
-         "`SIZE` accepts suffixes K, M, G. `DEVICE` is path to block device, for example \"/dev/nbd0\".",
-};
+void syssim_report_completion(SysTime t, struct disksim_request *r, void *ctx)
+{
+  completed = 1;
+  now = t;
+  // add_statistics(&st, t - r->start);
+}
 
 
 int main(int argc, char *argv[]) {
-  struct arguments arguments = {
-    .verbose = 0,
-  };
-  // argp_parse(&argp, argc, argv, 0, 0, &arguments);
-  load_config(argv[1], &configuration);
+  int verbose = 0;
+
+  load_config(argv[1], &disk_config);
 
   struct buse_operations aop = {
     .read = anydisk_read,
@@ -102,11 +108,25 @@ int main(int argc, char *argv[]) {
     .disc = anydisk_disc,
     .flush = anydisk_flush,
     .trim = anydisk_trim,
-    .size = arguments.size,
+    .size = disk_config.disk_size,
   };
 
   data = malloc(aop.size);
   if (data == NULL) err(EXIT_FAILURE, "failed to alloc space for data");
 
-  return buse_main(arguments.device, &aop, (void *)&arguments.verbose);
+  disksim = disksim_interface_initialize(
+    disk_config.param_file, 
+    disk_config.output_file,
+    syssim_report_completion,
+    syssim_schedule_callback,
+    syssim_deschedule_callback,
+    0,
+    0,
+    0
+  );
+
+  /* NOTE: it is bad to use this internal disksim call from external... */
+  DISKSIM_srand48(1);
+
+  return buse_main(disk_config.nbd_device, &aop, (void *)&verbose);
 }

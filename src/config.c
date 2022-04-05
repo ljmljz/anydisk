@@ -20,6 +20,8 @@ static int config_handler(void* user, const char* section, const char* name, con
         }
     } else if (MATCH("ANYDISK", "type")) {
         pconfig->disk_type = strdup(value);
+    } else if (MATCH("ANYDISK", "device")) {
+        pconfig->nbd_device = strdup(value);
     } else if (MATCH("ANYDISK", "param")) {
         pconfig->param_file = strdup(value);
     } else if (MATCH("ANYDISK", "output")) {
