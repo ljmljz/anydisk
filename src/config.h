@@ -8,5 +8,6 @@ typedef struct anydisk_config_t
 
 } anydisk_config;
 
-int config_handler(void* user, const char* section, const char* name, const char* value);
+static int config_handler(void* user, const char* section, const char* name, const char* value);
+static unsigned long long strtoull_with_prefix(const char * str, char * * end);
 int load_config(const char* filename, anydisk_config* config);

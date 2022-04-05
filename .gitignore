@@ -2,3 +2,5 @@
 .github
 *.o
 *.a
+./include
+./lib

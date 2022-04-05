@@ -80,73 +80,9 @@ struct arguments {
   int verbose;
 };
 
-static unsigned long long strtoull_with_prefix(const char * str, char * * end) {
-  unsigned long long v = strtoull(str, end, 0);
-  switch (**end) {
-    case 'K':
-      v *= 1024;
-      *end += 1;
-      break;
-    case 'M':
-      v *= 1024 * 1024;
-      *end += 1;
-      break;
-    case 'G':
-      v *= 1024 * 1024 * 1024;
-      *end += 1;
-      break;
-  }
-  return v;
-}
-
-/* Parse a single option. */
-static error_t parse_opt(int key, char *arg, struct argp_state *state) {
-  struct arguments *arguments = state->input;
-  char * endptr;
-
-  switch (key) {
-
-    case 'v':
-      arguments->verbose = 1;
-      break;
-
-    case ARGP_KEY_ARG:
-      switch (state->arg_num) {
-
-        case 0:
-          arguments->size = strtoull_with_prefix(arg, &endptr);
-          if (*endptr != '\0') {
-            /* failed to parse integer */
-            errx(EXIT_FAILURE, "SIZE must be an integer");
-          }
-          break;
-
-        case 1:
-          arguments->device = arg;
-          break;
-
-        default:
-          /* Too many arguments. */
-          return ARGP_ERR_UNKNOWN;
-      }
-      break;
-
-    case ARGP_KEY_END:
-      if (state->arg_num < 2) {
-        warnx("not enough arguments");
-        argp_usage(state);
-      }
-      break;
-
-    default:
-      return ARGP_ERR_UNKNOWN;
-  }
-  return 0;
-}
-
 static struct argp argp = {
   .options = options,
-  .parser = parse_opt,
+  // .parser = parse_opt,
   .args_doc = "SIZE DEVICE",
   .doc = "BUSE virtual block device that stores its content in memory.\n"
          "`SIZE` accepts suffixes K, M, G. `DEVICE` is path to block device, for example \"/dev/nbd0\".",
