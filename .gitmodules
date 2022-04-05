@@ -1,0 +1,6 @@
+[submodule "thrid/BUSE"]
+	path = thrid/BUSE
+	url = https://github.com/acozzette/BUSE.git
+[submodule "inih"]
+	path = inih
+	url = https://github.com/benhoyt/inih.git
